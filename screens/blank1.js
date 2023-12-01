@@ -6,8 +6,8 @@ import * as Notifications from "expo-notifications";
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 
@@ -16,11 +16,12 @@ export default function BlankScreen1() {
   const [notification, setNotification] = useState(false);
   const notificationListener = useRef();
   const responseListener = useRef();
-
+  console.log(expoPushToken);
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) =>
-      setExpoPushToken(token)
-    );
+    schedulePushNotification(); // 앱이 처음 로드될 때 알림 스케줄링
+    registerForPushNotificationsAsync().then((token) => {
+      setExpoPushToken(token);
+    });
 
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
@@ -76,13 +77,12 @@ async function schedulePushNotification() {
       body: "하단 메일 확인",
       data: { data: "goes here" },
     },
-    trigger: { seconds: 2 },
+    trigger: null,
   });
 }
 
 async function registerForPushNotificationsAsync() {
   let token;
-
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -107,8 +107,8 @@ async function registerForPushNotificationsAsync() {
     token = (await Notifications.getExpoPushTokenAsync()).data;
     console.log(token);
   } else {
-    alert("Must use physical device for Push Notifications");
+    alert("Must use a physical device for Push Notifications");
   }
-
+  console.log(token);
   return token;
 }
