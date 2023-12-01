@@ -8,7 +8,7 @@ export default function LoginScreen({ navigation }) {
 
   const onPressSubmit = async () => {
     try {
-      const response = await fetch("http://localhost:3000/login", {
+      const response = await fetch("http://192.168.50.211:3000/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -19,29 +19,16 @@ export default function LoginScreen({ navigation }) {
         }),
       });
 
-      // 서버 응답 로그 출력
-      console.log("POST RESPONSE: " + JSON.stringify(response));
+      const result = await response.json();
 
-      // 서버 응답을 텍스트로 변환하여 로그 출력 (HTML 또는 다른 형식일 수 있음)
-      const responseText = await response.text();
-      console.log("Response Text:", responseText);
-
-      // 응답이 JSON 형식인 경우에만 파싱
-      if (response.headers.get("content-type")?.includes("application/json")) {
-        const result = JSON.parse(responseText);
-
-        if (result.success) {
-          // 로그인 성공 처리
-          console.log("Login successful");
-          await AsyncStorage.setItem("isLoggedIn", "true");
-          navigation.navigate("index");
-        } else {
-          // 로그인 실패 처리
-          console.error("Login failed:", result.message);
-        }
+      if (result.success) {
+        // Login successful, navigate to the next screen
+        console.log("GOt here");
+        await AsyncStorage.setItem("isLoggedIn", "true");
+        navigation.navigate("index");
       } else {
-        // 응답이 JSON이 아닌 경우의 처리
-        console.error("Invalid response format");
+        // Display an error message or handle the login failure
+        console.error("Login failed:", result.message);
       }
     } catch (error) {
       console.error("Error during login:", error);
@@ -63,6 +50,7 @@ export default function LoginScreen({ navigation }) {
         value={password}
         placeholder="Password"
         secureTextEntry
+        // keyboardType="numeric"
       />
       <Pressable style={styles.button} onPress={onPressSubmit}>
         <Text style={styles.text}>Login</Text>

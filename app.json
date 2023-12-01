@@ -11,17 +11,21 @@
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "useNextNotificationsApi": true
+    },
+    "notification": {
+      "icon": "./assets/adaptive-icon.png",
+      "color": "#59ff59"
     },
     "web": {
       "favicon": "./assets/favicon.png"
