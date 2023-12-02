@@ -25,9 +25,7 @@
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
@@ -39,18 +37,53 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "compileSdkVersion": 33,
+      "targetSdkVersion": 33,
       "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "FOREGROUND_SERVICE",
-        "ACCESS_NOTIFICATION_POLICY",
-        "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "ACCEPT_HANDOVER",
+        "ACCESS_BACKGROUND_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_MEDIA_LOCATION",
+        "ACTIVITY_RECOGNITION",
+        "ANSWER_PHONE_CALLS",
+        "BLUETOOTH_ADVERTISE",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "BODY_SENSORS",
+        "CALL_PHONE",
+        "CAMERA",
+        "GET_ACCOUNTS",
+        "PROCESS_OUTGOING_CALLS",
+        "READ_CALENDAR",
+        "READ_CALL_LOG",
+        "READ_CONTACTS",
+        "READ_EXTERNAL_STORAGE",
+        "READ_PHONE_NUMBERS",
+        "READ_PHONE_STATE",
+        "READ_SMS",
+        "RECEIVE_MMS",
+        "RECEIVE_SMS",
+        "RECEIVE_WAP_PUSH",
+        "RECORD_AUDIO",
+        "SEND_SMS",
+        "USE_SIP",
+        "WRITE_CALENDAR",
+        "WRITE_CALL_LOG",
+        "WRITE_CONTACTS",
+        "WRITE_EXTERNAL_STORAGE",
+        "com.android.voicemail.permission.ADD_VOICEMAIL"
       ]
     },
     "notification": {
-      "icon": "./assets/adaptive-icon.png",
-      "color": "#59ff59"
+      "icon": "./assets/icon.png",
+      "color": "#000000",
+      "androidMode": "default",
+      "androidCollapsedTitle": "test-react-native",
+      "androidShowWhen": true,
+      "androidIcon": "./assets/notification-icon.png",
+      "apiUrl": "https://exp.host/--/api/v2/push/send",
+      "apiToken": "a6402589-1ecf-420a-8dde-cd9dcba52f38"
     },
     "web": {
       "favicon": "./assets/favicon.png"
