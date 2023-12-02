@@ -7,7 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "node-server": "node screens/routes.js"
+    "node-server": "node screens/sendText.js"
   },
   "dependencies": {
     "@expo/webpack-config": "^19.0.0",
