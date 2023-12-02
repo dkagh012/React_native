@@ -1,41 +1,51 @@
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import messaging from "@react-native-firebase/messaging";
+import { NavigationContainer, useNavigation } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+
+const Stack = createStackNavigator();
 
 export default function BlankScreen3() {
-  const [colors, setColors] = useState([]);
+  const navigation = useNavigation();
+  const [loading, setLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState("Home");
 
   useEffect(() => {
-    // Fetch data from the server
-    fetch("http://localhost:3000/colors")
-      .then((response) => response.json())
-      .then((data) => {
-        setColors(data);
-      })
-      .catch((error) => {
-        console.error("Error fetching color data:", error);
+    // Assume a message-notification contains a "type" property in the data payload of the screen to open
+
+    messaging().onNotificationOpenedApp((remoteMessage) => {
+      console.log(
+        "Notification caused app to open from background state:",
+        remoteMessage.notification
+      );
+      navigation.navigate(remoteMessage.data.type);
+    });
+
+    // Check whether an initial notification is available
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage) {
+          console.log(
+            "Notification caused app to open from quit state:",
+            remoteMessage.notification
+          );
+          setInitialRoute(remoteMessage.data.type); // e.g. "Settings"
+        }
+        setLoading(false);
       });
   }, []);
 
+  if (loading) {
+    return null;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.titleText}>Colors:</Text>
-      {colors.length > 0 && (
-        <Text key={colors[2].color_id} style={styles.colorText}>
-          {colors[2].color_name}
-        </Text>
-      )}
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName={initialRoute}>
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  titleText: {
-    fontSize: 20,
-  },
-});
