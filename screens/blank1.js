@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Text, View, Button, Platform } from "react-native";
+import { Text, View, Button, Platform, Alert } from "react-native";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 
@@ -16,13 +16,31 @@ export default function BlankScreen1() {
   const [notification, setNotification] = useState(false);
   const notificationListener = useRef();
   const responseListener = useRef();
-  console.log(expoPushToken);
+
   useEffect(() => {
-    schedulePushNotification(); // 앱이 처음 로드될 때 알림 스케줄링
     registerForPushNotificationsAsync().then((token) => {
+      console.log(token);
       setExpoPushToken(token);
+      if (token) {
+        // 푸시 토큰을 서버로 전송
+        fetch("https://192.168.50.211:3000/register-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            token: "ExponentPushToken[토큰주소]",
+            title: "허브의 Expo Push Notification 구현기",
+            body: "이야 이게 되네~~",
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => console.log(data))
+          .catch((error) => console.error("Error:", error));
+      }
     });
 
+    // 알림 리스너 설정
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
         setNotification(notification);
@@ -30,30 +48,28 @@ export default function BlankScreen1() {
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
+        console.log("Notification response received:", response);
       });
 
     return () => {
-      Notifications.removeNotificationSubscription(
-        notificationListener.current
-      );
-      Notifications.removeNotificationSubscription(responseListener.current);
+      // 리스너 해제
+      if (notificationListener.current && responseListener.current) {
+        Notifications.removeNotificationSubscription(
+          notificationListener.current
+        );
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
     };
   }, []);
 
   return (
     <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "space-around",
-      }}
+      style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}
     >
+      {console.log(expoPushToken)}
       <Text>Your expo push token: {expoPushToken}</Text>
       <View style={{ alignItems: "center", justifyContent: "center" }}>
-        <Text>
-          Title: {notification && notification.request.content.title}{" "}
-        </Text>
+        <Text>Title: {notification && notification.request.content.title}</Text>
         <Text>Body: {notification && notification.request.content.body}</Text>
         <Text>
           Data:{" "}
@@ -83,6 +99,31 @@ async function schedulePushNotification() {
 
 async function registerForPushNotificationsAsync() {
   let token;
+
+  if (Device.isDevice) {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      alert("푸시 알림을 위한 토큰을 가져오지 못했습니다!");
+      return;
+    }
+
+    // Expo 푸시 토큰 획득
+    const expoPushTokenResponse = await Notifications.getExpoPushTokenAsync();
+    token = expoPushTokenResponse.data;
+  } else {
+    alert("푸시 알림을 위해 실제 기기를 사용해야 합니다.");
+    return;
+  }
+
+  // 안드로이드 전용: 알림 채널 설정
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -92,23 +133,5 @@ async function registerForPushNotificationsAsync() {
     });
   }
 
-  if (Device.isDevice) {
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== "granted") {
-      alert("Failed to get push token for push notification!");
-      return;
-    }
-    token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log(token);
-  } else {
-    alert("Must use a physical device for Push Notifications");
-  }
-  console.log(token);
   return token;
 }
