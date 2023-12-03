@@ -39,28 +39,6 @@ export default function Popup() {
                     /^ExponentPushToken\[(.*)\]$/,
                     "$1"
                   );
-
-                  // const payload = { token: exponentPushToken };
-
-                  // fetch("http://192.168.50.211:3000/UserToken", {
-                  //   method: "POST",
-                  //   headers: { "Content-Type": "application/json" },
-                  //   body: JSON.stringify(payload),
-                  // })
-                  //   .then((response) => {
-                  //     if (!response.ok) {
-                  //       throw new Error(
-                  //         `HTTP error! Status: ${response.status}`
-                  //       );
-                  //     }
-                  //     return response.json();
-                  //   })
-                  //   .then((data) => {
-                  //     console.log(data);
-                  //   })
-                  //   .catch((error) => {
-                  //     console.error("Fetch error:", error);
-                  //   });
                   const payload = { token: `${exponentPushToken}` };
 
                   fetch("http://192.168.50.211:3000/UserToken", {
