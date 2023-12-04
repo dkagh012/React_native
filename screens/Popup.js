@@ -1,14 +1,28 @@
+// Import necessary libraries
 import { useEffect } from "react";
-import { Alert, PermissionsAndroid, Platform } from "react-native";
+import { Alert, PermissionsAndroid, Platform, View, Text } from "react-native";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// Import navigation (assuming you have it set up)
+import { useNavigation } from "@react-navigation/native";
+
 // Popup 컴포넌트 정의
 export default function Popup() {
+  alert("test");
+  // Get navigation object
+  const navigation = useNavigation();
+
   // useEffect를 사용하여 컴포넌트가 처음 로드될 때 한 번만 실행
   useEffect(() => {
     // 알림 권한을 확인하는 함수
     const checkNotificationPermission = async () => {
+      const isTokenIn = await AsyncStorage.getItem("isTokenIn");
+      // if (isTokenIn === "true") {
+      //   navigation.navigate("login");
+      // } else {
       // Alert을 사용하여 간단한 팝업을 표시
       Alert.alert("테스트 알림", "당신은 멋진 개발자입니다.", [
         {
@@ -16,7 +30,6 @@ export default function Popup() {
           onPress: async () => {
             console.log("동의");
             // 여기에 true에 해당하는 동작 추가
-
             // 권한 요청
             try {
               const granted = await PermissionsAndroid.request(
@@ -47,7 +60,10 @@ export default function Popup() {
                     body: JSON.stringify(payload),
                   })
                     .then((response) => response.json())
-                    .then((data) => console.log(data))
+                    .then((data) => {
+                      AsyncStorage.setItem("isTokenIn", "true");
+                      navigation.navigate("login");
+                    })
                     .catch((error) => console.error("Fetch error:", error));
                 }
               } else {
@@ -63,14 +79,22 @@ export default function Popup() {
           onPress: () => {
             console.log("거부");
             // 여기에 false에 해당하는 동작 추가
+
+            // Set the AsyncStorage item to "false"
+            AsyncStorage.setItem("isTokenIn", "false");
           },
           style: "cancel",
         },
       ]);
+      // }
     };
 
     // 컴포넌트가 처음 로드될 때 알림 권한 확인 함수 실행
     checkNotificationPermission();
   }, []); // useEffect를 빈 배열로 전달하여 앱이 처음 로드될 때 한 번만 실행되도록 설정
-  // 나머지 앱 코드...
+  return (
+    <View>
+      <Text>Please wait... redirecting in</Text>
+    </View>
+  );
 }
