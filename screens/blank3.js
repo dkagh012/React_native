@@ -1,122 +1,100 @@
-import { useState, useEffect, useRef } from "react";
-import { Text, View, Button, Platform, PermissionsAndroid } from "react-native";
-import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
+// Import necessary libraries
+import { useEffect } from "react";
+import { Alert, PermissionsAndroid, Platform, View, Text } from "react-native";
 import Constants from "expo-constants";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Import navigation (assuming you have it set up)
+import { useNavigation } from "@react-navigation/native";
 
-// Can use this function below or use Expo's Push Notification Tool from: https://expo.dev/notifications
-async function sendPushNotification(expoPushToken) {
-  const message = {
-    to: expoPushToken,
-    sound: "default",
-    title: "Original Title",
-    body: "And here is the body!",
-    data: { someData: "goes here" },
-  };
+// Popup 컴포넌트 정의
+export default function Popup() {
+  alert("test");
+  // Get navigation object
+  const navigation = useNavigation();
 
-  await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(message),
-  });
-}
-
-async function registerForPushNotificationsAsync() {
-  let token;
-  if (Device.isDevice) {
-    const existingStatus = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-    );
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== "granted") {
-      alert("Failed to get push token for push notification!");
-      return;
-    }
-    token = JSON.parse(
-      JSON.stringify(
-        await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig.extra.eas.projectId,
-        })
-      )
-    ).data;
-  }
-
-  if (Platform.OS === "android") {
-    Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
-    });
-  }
-  return token;
-}
-export default function BlankScreen3() {
-  const [expoPushToken, setExpoPushToken] = useState("");
-  const [notification, setNotification] = useState(false);
-  const notificationListener = useRef();
-  const responseListener = useRef();
-
+  // useEffect를 사용하여 컴포넌트가 처음 로드될 때 한 번만 실행
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) =>
-      setExpoPushToken(token)
-    );
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification);
-      });
+    // 알림 권한을 확인하는 함수
+    const checkNotificationPermission = async () => {
+      const isTokenIn = await AsyncStorage.getItem("isTokenIn");
+      // if (isTokenIn === "true") {
+      //   navigation.navigate("login");
+      // } else {
+      // Alert을 사용하여 간단한 팝업을 표시
+      Alert.alert("테스트 알림", "당신은 멋진 개발자입니다.", [
+        {
+          text: "동의",
+          onPress: async () => {
+            console.log("동의");
+            // 여기에 true에 해당하는 동작 추가
+            // 권한 요청
+            try {
+              const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+              );
 
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
-      });
+              if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                console.log("알림 권한이 승인되었습니다.");
 
-    return () => {
-      Notifications.removeNotificationSubscription(
-        notificationListener.current
-      );
-      Notifications.removeNotificationSubscription(responseListener.current);
+                if (Platform.OS === "android" && Device.isDevice) {
+                  const token = JSON.parse(
+                    JSON.stringify(
+                      await Notifications.getExpoPushTokenAsync({
+                        projectId: Constants.expoConfig.extra.eas.projectId,
+                      })
+                    )
+                  ).data;
+                  console.log(token);
+                  const exponentPushToken = token.replace(
+                    /^ExponentPushToken\[(.*)\]$/,
+                    "$1"
+                  );
+                  const payload = { token: `${exponentPushToken}` };
+
+                  fetch("http://192.168.50.211:3000/UserToken", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      AsyncStorage.setItem("isTokenIn", "true");
+                      navigation.navigate("login");
+                    })
+                    .catch((error) => console.error("Fetch error:", error));
+                }
+              } else {
+                console.log("알림 권한이 거부되었습니다.");
+              }
+            } catch (err) {
+              console.warn(err);
+            }
+          },
+        },
+        {
+          text: "거부",
+          onPress: () => {
+            console.log("거부");
+            // 여기에 false에 해당하는 동작 추가
+
+            // Set the AsyncStorage item to "false"
+            AsyncStorage.setItem("isTokenIn", "false");
+          },
+          style: "cancel",
+        },
+      ]);
+      // }
     };
-  }, []);
 
+    // 컴포넌트가 처음 로드될 때 알림 권한 확인 함수 실행
+    checkNotificationPermission();
+  }, []); // useEffect를 빈 배열로 전달하여 앱이 처음 로드될 때 한 번만 실행되도록 설정
   return (
-    <View
-      style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}
-    >
-      <Text>Your expo push token: {expoPushToken}</Text>
-      <View style={{ alignItems: "center", justifyContent: "center" }}>
-        <Text>
-          테스트: {notification && notification.request.content.title}{" "}
-        </Text>
-        <Text>Body: {notification && notification.request.content.body}</Text>
-        <Text>
-          Data:{" "}
-          {notification && JSON.stringify(notification.request.content.data)}
-        </Text>
-      </View>
-      <Button
-        title="Press to Send Notification"
-        onPress={async () => {
-          await sendPushNotification(expoPushToken);
-        }}
-      />
+    <View>
+      <Text>Please wait... redirecting in</Text>
     </View>
   );
 }

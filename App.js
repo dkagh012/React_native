@@ -8,6 +8,10 @@ import BlankScreen1 from "./screens/blank1";
 import BlankScreen2 from "./screens/blank2";
 import BlankScreen3 from "./screens/blank3";
 import Popup from "./screens/Popup";
+import Test from "./screens/test";
+
+// Import the 'firebase/app' module to initialize Firebase
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {

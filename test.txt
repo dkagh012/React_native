@@ -1,1 +1,2 @@
-Invoke-WebRequest -Uri "https://exp.host/--/api/v2/push/send" -Method POST -ContentType "application/json; charset=utf-8" -Body '{ "to": "ExponentPushToken[hBFpsRG7sSVWPDNKavlfbp]", "title": "허브의 Expo Push Notification 구현기", "body": "이야 이게 되네~~", "sound": "default" }'
+curl -Uri "https://exp.host/--/api/v2/push/send" -Method POST -ContentType "application/json; charset=utf-8" -Body '{ "to": "ExponentPushToken[PetQtmDUJWMyXuTqX-qge_]", "title": "허브의 Expo Push Notification 구현기", "body": "이야 이게 되네~~", "sound": "default" }'
+

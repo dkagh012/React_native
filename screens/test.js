@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Text, View, Button } from "react-native";
+import { Text, View, Button, Platform } from "react-native"; // Notifications 모듈을 expo-notifications에서 가져오므로 필요 없음
+import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import * as Permissions from "expo-permissions";
+import * as Permissions from "expo-permissions"; // Permissions 모듈 추가
 import messaging from "@react-native-firebase/messaging";
 
 Notifications.setNotificationHandler({
@@ -12,37 +13,28 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function sendPushNotification(fcmToken) {
-  // const message = {
-  //   to: fcmToken,
-  //   sound: "default",
-  //   title: "Original Title",
-  //   body: "And here is the body!",
-  //   data: { someData: "goes here" },
-  // };
+async function sendPushNotification(expoPushToken) {
+  const message = {
+    to: expoPushToken,
+    sound: "default",
+    title: "Original Title",
+    body: "And here is the body!",
+    data: { someData: "goes here" },
+  };
 
-  await fetch("https://fcm.googleapis.com/fcm/send", {
+  await fetch("https://exp.host/--/api/v2/push/send", {
     method: "POST",
     headers: {
       Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
       "Content-Type": "application/json",
-      Authorization: `key=AAAAU3xvVd0:APA91bFCBp67yPFpCdgJJvMhnf3wQi59B6CzKb4odZqwv6jqNsZZEyGMCtmHA3JPpN54__KCNyeU3x8xYRvBbuzJT1BD5hQIVkdONSDuyYHuq061WYE_NdZvHCXEHDKNQPwk5lzja4Hj`, // Replace with your Firebase server key
     },
-    body: JSON.stringify({
-      to: fcmToken,
-      notification: {
-        title: "Original Title",
-        body: "And here is the body!",
-      },
-      data: {
-        someData: "goes here",
-      },
-    }),
+    body: JSON.stringify(message),
   });
 }
 
 async function registerForPushNotificationsAsync() {
-  let fcmToken;
+  let token;
 
   // 권한 확인
   const { status: existingStatus } = await Permissions.getAsync(
@@ -61,27 +53,22 @@ async function registerForPushNotificationsAsync() {
     return;
   }
 
-  // FCM 토큰 가져오기
-  fcmToken = await messaging().getToken();
-  console.log("FCM Token:", fcmToken);
+  token = (await Notifications.getExpoPushTokenAsync()).data;
+  console.log("Expo Push Token:", token);
 
-  return fcmToken;
+  return token;
 }
 
 export default function App() {
-  const [fcmToken, setFcmToken] = useState("");
+  const [expoPushToken, setExpoPushToken] = useState("");
   const [notification, setNotification] = useState(false);
   const notificationListener = useRef();
   const responseListener = useRef();
-
+  console.log(expoPushToken);
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) => setFcmToken(token));
-
-    // Expo 앱에서 FCM 토큰 변경 시
-    const unsubscribeOnTokenRefresh = messaging().onTokenRefresh((newToken) => {
-      console.log("Refreshed FCM Token:", newToken);
-      setFcmToken(newToken);
-    });
+    registerForPushNotificationsAsync().then((token) =>
+      setExpoPushToken(token)
+    );
 
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
@@ -94,7 +81,6 @@ export default function App() {
       });
 
     return () => {
-      unsubscribeOnTokenRefresh();
       Notifications.removeNotificationSubscription(
         notificationListener.current
       );
@@ -106,7 +92,7 @@ export default function App() {
     <View
       style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}
     >
-      <Text>Your FCM token: {fcmToken}</Text>
+      <Text>Your expo push token: {expoPushToken}</Text>
       <View style={{ alignItems: "center", justifyContent: "center" }}>
         <Text>
           Title: {notification && notification.request.content.title}{" "}
@@ -120,7 +106,7 @@ export default function App() {
       <Button
         title="Press to Send Notification"
         onPress={async () => {
-          await sendPushNotification(fcmToken);
+          await sendPushNotification(expoPushToken);
         }}
       />
     </View>

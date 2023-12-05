@@ -1,73 +1,74 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Text, View, Button, Platform, PermissionsAndroid } from "react-native";
-import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
+import messaging from "@react-native-firebase/messaging";
+import "@react-native-firebase/app";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
   }),
 });
 
-// Can use this function below or use Expo's Push Notification Tool from: https://expo.dev/notifications
 async function sendPushNotification(expoPushToken) {
-  const message = {
-    to: expoPushToken,
-    sound: "default",
-    title: "Original Title",
-    body: "And here is the body!",
-    data: { someData: "goes here" },
-  };
+  const pushToken = (await Notifications.getDevicePushTokenAsync()).data;
+  console.log(expoPushToken);
+  console.log(pushToken);
 
-  await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(message),
-  });
+  try {
+    const response = await fetch("https://fcm.googleapis.com/fcm/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `key= AAAAU3xvVd0:APA91bFCBp67yPFpCdgJJvMhnf3wQi59B6CzKb4odZqwv6jqNsZZEyGMCtmHA3JPpN54__KCNyeU3x8xYRvBbuzJT1BD5hQIVkdONSDuyYHuq061WYE_NdZvHCXEHDKNQPwk5lzja4Hj`, // Replace with your Firebase server key
+      },
+      body: JSON.stringify({
+        to: expoPushToken, // Use expoPushToken here
+        notification: {
+          title: "Original Title",
+          body: "And here is the body!",
+        },
+        data: {
+          someData: "goes here",
+        },
+      }),
+    });
+    console.log("FCM Server Response Status:", response.status);
+
+    // Additional tasks based on the server response can be performed here
+  } catch (error) {
+    console.error("Error sending push notification:", error);
+  }
 }
+
 async function registerForPushNotificationsAsync() {
-  let token;
-  if (Device.isDevice) {
-    const existingStatus = await PermissionsAndroid.request(
+  let fcmToken;
+  try {
+    let status = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
     );
-    let finalStatus = existingStatus;
 
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== "granted") {
+    if (status !== "granted") {
       alert("Failed to get push token for push notification!");
       return;
     }
-    token = JSON.parse(
-      JSON.stringify(
-        await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig.extra.eas.projectId,
-        })
-      )
-    ).data;
+
+    if (Platform.OS === "ios") {
+      await messaging().registerDeviceForRemoteMessages();
+    }
+
+    fcmToken = (await messaging().getToken()) || "";
+  } catch (error) {
+    console.error("Error getting push token:", error);
   }
 
-  if (Platform.OS === "android") {
-    Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
-    });
-  }
-  return token;
+  return fcmToken;
 }
-export default function BlankScreen1() {
+
+export default function BlankScreen3() {
   const [expoPushToken, setExpoPushToken] = useState("");
   const [notification, setNotification] = useState(false);
   const notificationListener = useRef();
@@ -78,15 +79,23 @@ export default function BlankScreen1() {
       setExpoPushToken(token)
     );
 
+    const onNotificationReceived = (notification) => {
+      setNotification(notification);
+      // Handle foreground notifications here
+    };
+
     notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification);
-      });
+      Notifications.addNotificationReceivedListener(onNotificationReceived);
+
+    const onNotificationResponseReceived = (response) => {
+      console.log(response);
+      // Handle notification response here
+    };
 
     responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
-      });
+      Notifications.addNotificationResponseReceivedListener(
+        onNotificationResponseReceived
+      );
 
     return () => {
       Notifications.removeNotificationSubscription(
@@ -103,12 +112,14 @@ export default function BlankScreen1() {
       <Text>Your expo push token: {expoPushToken}</Text>
       <View style={{ alignItems: "center", justifyContent: "center" }}>
         <Text>
-          테스트: {notification && notification.request.content.title}{" "}
+          테스트: {notification?.request?.content?.title || "No title"}{" "}
         </Text>
-        <Text>Body: {notification && notification.request.content.body}</Text>
+        <Text>Body: {notification?.request?.content?.body || "No body"}</Text>
         <Text>
           Data:{" "}
-          {notification && JSON.stringify(notification.request.content.data)}
+          {notification?.request?.content?.data
+            ? JSON.stringify(notification.request.content.data)
+            : "No data"}
         </Text>
       </View>
       <Button

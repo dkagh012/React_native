@@ -53,7 +53,7 @@ export default function Popup() {
                     "$1"
                   );
                   const payload = { token: `${exponentPushToken}` };
-
+                  console.log(payload);
                   fetch("http://192.168.50.211:3000/UserToken", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
